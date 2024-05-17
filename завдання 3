@@ -1,0 +1,146 @@
+import json
+import os
+import matplotlib.pyplot as plt
+from collections import defaultdict
+
+def load_json(file_name):
+    if os.path.exists(file_name):
+        with open(file_name, 'r') as file:
+            return json.load(file)
+    return {}
+
+def plot_pie_chart(data, day):
+    if day not in data:
+        print(f"Дані за {day} відсутні.")
+        return
+
+    parts = data[day]
+    labels = []
+    sizes = []
+    for part, details in parts.items():
+        labels.append(part)
+        sizes.append(details['quantity'])
+
+    # Параметри діаграми
+    colors = plt.cm.Paired(range(len(labels)))  # Використовуємо різні кольори для секторів
+    plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=140, colors=colors)
+    plt.axis('equal')  # Забезпечує круглий вигляд діаграми
+    plt.title(f'Кількість деталей за {day}')
+    plt.show()
+
+def plot_weekly_pie_chart(data):
+    weekly_totals = defaultdict(int)
+
+    for day, parts in data.items():
+        for part, details in parts.items():
+            weekly_totals[part] += details['quantity']
+
+    labels = list(weekly_totals.keys())
+    sizes = list(weekly_totals.values())
+
+    # Параметри діаграми
+    colors = plt.cm.Paired(range(len(labels)))  # Використовуємо різні кольори для секторів
+    plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=140, colors=colors)
+    plt.axis('equal')  # Забезпечує круглий вигляд діаграми
+    plt.title('Кількість деталей за тиждень')
+    plt.show()
+
+def main():
+    input_file = 'details.json'
+    data = load_json(input_file)
+
+    while True:
+        print("\nМеню:")
+        print("1. Виведення на екран вмісту JSON файлу")
+        print("2. Додавання нового запису в JSON файл")
+        print("3. Видалення запису з JSON файлу")
+        print("4. Пошук даних у JSON файлі за одним із полів")
+        print("5. Визначення загальної вартості деталей за один тиждень")
+        print("6. Побудова кругової діаграми для обраного дня")
+        print("7. Побудова кругової діаграми для всього тижня")
+        print("8. Вихід")
+
+        choice = input("Виберіть дію: ")
+
+        if choice == '1':
+            print(json.dumps(data, indent=4))
+        elif choice == '2':
+            add_record(input_file)
+        elif choice == '3':
+            delete_record(input_file)
+        elif choice == '4':
+            search_record(input_file)
+        elif choice == '5':
+            calculate_weekly_cost(input_file, 'weekly_cost_result.json')
+        elif choice == '6':
+            day = input("Введіть день тижня для побудови кругової діаграми: ")
+            plot_pie_chart(data, day)
+        elif choice == '7':
+            plot_weekly_pie_chart(data)
+        elif choice == '8':
+            break
+        else:
+            print("Неправильний вибір, спробуйте ще раз.")
+
+def add_record(file_name):
+    data = load_json(file_name)
+    day = input("Введіть день тижня: ")
+    if day not in data:
+        data[day] = {}
+    part_name = input("Введіть назву деталі: ")
+    quantity = int(input("Введіть кількість: "))
+    price = float(input("Введіть ціну за одиницю: "))
+    data[day][part_name] = {"quantity": quantity, "price": price}
+    save_json(file_name, data)
+
+def delete_record(file_name):
+    data = load_json(file_name)
+    day = input("Введіть день тижня для видалення запису: ")
+    if day in data:
+        part_name = input("Введіть назву деталі для видалення: ")
+        if part_name in data[day]:
+            del data[day][part_name]
+            if not data[day]:
+                del data[day]
+            save_json(file_name, data)
+            print("Запис видалено.")
+        else:
+            print("Деталь не знайдена.")
+    else:
+        print("День тижня не знайдений.")
+
+def search_record(file_name):
+    data = load_json(file_name)
+    field = input("Введіть поле для пошуку (day/part_name): ")
+    value = input("Введіть значення для пошуку: ")
+    results = []
+    for day, parts in data.items():
+        if field == "day" and day == value:
+            results.append({day: parts})
+        elif field == "part_name":
+            for part_name, details in parts.items():
+                if part_name == value:
+                    results.append({day: {part_name: details}})
+    print("Результати пошуку:")
+    print(json.dumps(results, indent=4))
+
+def calculate_weekly_cost(input_file, output_file):
+    data = load_json(input_file)
+    weekly_cost = {}
+    for day, parts in data.items():
+        total_cost = 0
+        for part_name, details in parts.items():
+            total_cost += details["quantity"] * details["price"]
+        weekly_cost[day] = total_cost
+    save_json(output_file, weekly_cost)
+    print("Загальна вартість деталей за тиждень записана в", output_file)
+
+def save_json(file_name, data):
+    try:
+        with open(file_name, 'w') as file:
+            json.dump(data, file, indent=4)
+    except PermissionError:
+        print(f"Error: No permission to write to the file {file_name}.")
+
+if __name__ == "__main__":
+    main()
