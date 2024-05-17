@@ -1,0 +1,14 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+x = np.linspace(1, 7, 400)
+y = 5 * np.sin(10 * x) * np.sin(3 * x) / np.sqrt(x)
+
+plt.figure(figsize=(10, 6))
+plt.plot(x, y, label='Y(x) = 5*sin(10*x)*sin(3*x)/sqrt(x)', color='blue', linewidth=2, linestyle='-')
+plt.title('Графік функції Y(x)')
+plt.xlabel('x')
+plt.ylabel('Y(x)')
+plt.legend()
+plt.grid(True)
+plt.show()
